@@ -1,0 +1,32 @@
+spring:
+  application:
+    name: email-service
+
+  config:
+    import:
+      - optional:file:.env[.properties]
+      - classpath:application-mb.yml
+      - classpath:application-logging.yml
+      - classpath:application-actuator.yml
+
+  mail:
+    # Данные почтового клиента
+    host: smtp.mail.ru
+    port: 587
+    username: ${SUPPORT_EMAIL}
+    password: ${EMAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          # Шифрование TLS
+          starttls:
+            enable: true
+            required: true
+          # Доверять сертификату почтового клиента
+          ssl:
+            trust: smtp.mail.ru
+
+server:
+  port: 8081
+  address: 0.0.0.0

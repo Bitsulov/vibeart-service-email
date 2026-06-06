@@ -1,0 +1,11 @@
+management:
+  endpoints:
+    web:
+      exposure:
+        # открывает эндпоинты /actuator/health, /actuator/info, /actuator/prometheus
+        include: health, info, prometheus
+  prometheus:
+    metrics:
+      export:
+        # Разрешает экспорт метрик на /actuator/prometheus
+        enabled: true
