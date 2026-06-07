@@ -96,5 +96,5 @@ cp .env.example .env
 ## Ссылки
 
 - [VibeArt](https://github.com/Bitsulov/VibeArt.git) — основной репозиторий
-- [VibeArt-frontend](https://github.com/Bitsulov/VibeArt-frontend) — Клиентское web-приложение
-- [VibeArt Backend](https://github.com/Bitsulov/vibeart-backend.git) — основной сервис API
+- [VibeArt Web Frontend](https://github.com/Bitsulov/vibeart-web-frontend.git) — Клиентское web-приложение
+- [VibeArt API](https://github.com/Bitsulov/vibeart-service-api.git) — основной сервис API
