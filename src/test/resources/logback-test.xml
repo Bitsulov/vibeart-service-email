@@ -1,0 +1,3 @@
+<configuration>
+    <logger name="ru.vibeart.email.services.EmailService" level="ERROR" />
+</configuration>
