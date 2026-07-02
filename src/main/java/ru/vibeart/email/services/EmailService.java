@@ -7,6 +7,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
+import org.thymeleaf.context.Context;
+import org.thymeleaf.spring6.SpringTemplateEngine;
 
 /**
  * Сервис для отправки почтовых уведомлений (HTML-писем) пользователям.
@@ -18,6 +20,8 @@ import org.springframework.stereotype.Service;
  * <h2>Возможности</h2>
  * <ul>
  *   <li>Отправка письма с кодом подтверждения регистрации;</li>
+ *   <li>Отправка письма с кодом подтверждения смены адреса электронной почты;</li>
+ *   <li>Отправка письма с кодом подтверждения смены пароля;</li>
  *   <li>Отправка письма с временным паролем.</li>
  * </ul>
  *
@@ -35,8 +39,7 @@ import org.springframework.stereotype.Service;
  * <h2>Особенности</h2>
  * <ul>
  *   <li>Методы не бросают исключений наружу — любые ошибки логируются на уровне WARN;</li>
- *   <li>Контент формируется в HTML с кодировкой UTF-8;</li>
- *   <li>Рекомендуется вынести HTML-шаблоны во внешние файлы/шаблонизатор (Thymeleaf/Freemarker).</li>
+ *   <li>Контент формируется в HTML с использованием шаблонизатора Thymeleaf;</li>
  * </ul>
  *
  * <h2>Безопасность</h2>
@@ -56,6 +59,11 @@ public class EmailService {
      */
     private final JavaMailSender mailSender;
 
+    /**
+     * Движок шаблонов Thymeleaf для рендеринга HTML-писем из шаблонов (находятся в resources/templates)
+     */
+    private final SpringTemplateEngine templateEngine;
+
     private static final Logger log = LoggerFactory.getLogger(EmailService.class);
 
     /**
@@ -65,46 +73,150 @@ public class EmailService {
      * @param supportEmail адрес отправителя, как правило {@code ${spring.mail.username}} задается в {@code application.yml}.
      */
     public EmailService(JavaMailSender mailSender,
-                        @Value("${spring.mail.username}") String supportEmail) {
+                        @Value("${spring.mail.username}") String supportEmail,
+                        SpringTemplateEngine templateEngine) {
         this.mailSender = mailSender;
         this.supportEmail = supportEmail;
+        this.templateEngine = templateEngine;
     }
 
     /**
      * Отправляет письмо с кодом подтверждения регистрации.
      * <p>
-     * Формирует HTML-письмо: заголовок, приветствие, выделенный код подтверждения,
+     * Формирует HTML-письмо на языке, переданным в {@code language}: заголовок, выделенный код подтверждения,
      * пояснение об игнорировании письма, если запрос не пользователем.
      * </p>
      *
-     * @param toEmail          адрес получателя
-     * @param verificationCode код подтверждения (например, 6-значный OTP)
-     *
      * <p><b>Ошибки:</b> Исключения не пробрасываются; при ошибке отправки будет записан
      * лог уровня WARN, письмо отправлено не будет.</p>
+     *
+     * @param toEmail адрес получателя
+     * @param verificationCode шестизначный код подтверждения
+     * @param language код языка клиента
+     *
      */
-    public void sendCustomVerificationEmail(String toEmail, String verificationCode) {
+    public void sendRegisterVerification(String toEmail, String verificationCode, String language) {
         try {
             MimeMessage mimeMessage = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
 
             helper.setFrom(supportEmail);
             helper.setTo(toEmail);
-            helper.setSubject("Подтверждение регистрации");
 
-            String content =
-                    "<html>" +
-                            "<body style='font-family: Arial, sans-serif; background-color: #f9f9f9; padding: 20px;'>" +
-                            "<div style='background-color: #fff; padding: 30px; border-radius: 8px; max-width: 600px; margin: auto;'>" +
-                            "<h2 style='color: #4CAF50;'>Подтверждение регистрации</h2>" +
-                            "<p>Здравствуйте! Спасибо за регистрацию в нашем сервисе.</p>" +
-                            "<p>Ваш код подтверждения:</p>" +
-                            "<div style='font-size: 24px; font-weight: bold; color: #4CAF50; margin: 20px 0;'>" + verificationCode + "</div>" +
-                            "<p>Если вы не запрашивали это письмо, просто проигнорируйте его.</p>" +
-                            "</div>" +
-                            "</body>" +
-                            "</html>";
+            Context context = new Context();
+            context.setVariable("verificationCode", verificationCode);
 
+            String template;
+            String subject;
+            switch (language) {
+                case "ru" -> {
+                    template = "auth/register_ru";
+                    subject = "Подтверждение регистрации";
+                }
+                default -> {
+                    template = "auth/register_en";
+                    subject = "Registration Confirmation";
+                }
+            };
+
+            helper.setSubject(subject);
+            String content = templateEngine.process(template, context);
+            helper.setText(content, true);
+            mailSender.send(mimeMessage);
+        } catch (Exception e) {
+            log.warn("Failed to send verification email to {}", toEmail, e);
+        }
+    }
+
+    /**
+     * Отправляет письмо с кодом подтверждения смены адреса электронной почты.
+     * <p>
+     * Формирует HTML-письмо на языке, переданным в {@code language}: заголовок, выделенный код подтверждения,
+     * пояснение об игнорировании письма, если запрос не пользователем.
+     * </p>
+     *
+     * <p><b>Ошибки:</b> Исключения не пробрасываются; при ошибке отправки будет записан
+     * лог уровня WARN, письмо отправлено не будет.</p>
+     *
+     * @param toEmail адрес получателя
+     * @param verificationCode шестизначный код подтверждения
+     * @param language код языка клиента
+     *
+     */
+    public void sendChangeEmailVerification(String toEmail, String verificationCode, String language) {
+        try {
+            MimeMessage mimeMessage = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
+
+            helper.setFrom(supportEmail);
+            helper.setTo(toEmail);
+
+            Context context = new Context();
+            context.setVariable("verificationCode", verificationCode);
+
+            String template;
+            String subject;
+            switch (language) {
+                case "ru" -> {
+                    template = "user/change_email_ru";
+                    subject = "Подтверждение смены адреса электронной почты";
+                }
+                default -> {
+                    template = "user/change_email_en";
+                    subject = "Confirmation of email address change";
+                }
+            };
+
+            helper.setSubject(subject);
+            String content = templateEngine.process(template, context);
+            helper.setText(content, true);
+            mailSender.send(mimeMessage);
+        } catch (Exception e) {
+            log.warn("Failed to send verification email to {}", toEmail, e);
+        }
+    }
+
+    /**
+     * Отправляет письмо с кодом подтверждения смены пароля.
+     * <p>
+     * Формирует HTML-письмо, на языке, переданным в {@code language}: заголовок, выделенный код подтверждения,
+     * пояснение об игнорировании письма, если запрос не пользователем.
+     * </p>
+     *
+     * <p><b>Ошибки:</b> Исключения не пробрасываются; при ошибке отправки будет записан
+     * лог уровня WARN, письмо отправлено не будет.</p>
+     *
+     * @param toEmail адрес получателя
+     * @param verificationCode шестизначный код подтверждения
+     * @param language код языка клиента
+     *
+     */
+    public void sendChangePasswordVerification(String toEmail, String verificationCode, String language) {
+        try {
+            MimeMessage mimeMessage = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
+
+            helper.setFrom(supportEmail);
+            helper.setTo(toEmail);
+
+            Context context = new Context();
+            context.setVariable("verificationCode", verificationCode);
+
+            String template;
+            String subject;
+            switch (language) {
+                case "ru" -> {
+                    template = "user/change_password_ru";
+                    subject = "Подтверждение смены пароля";
+                }
+                default -> {
+                    template = "user/change_password_en";
+                    subject = "Confirmation of password change";
+                }
+            };
+
+            helper.setSubject(subject);
+            String content = templateEngine.process(template, context);
             helper.setText(content, true);
             mailSender.send(mimeMessage);
         } catch (Exception e) {
