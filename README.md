@@ -23,14 +23,17 @@
 cp .env.example .env
 ```
 
-| Переменная           | Описание                      |
-|----------------------|-------------------------------|
-| `SUPPORT_EMAIL`      | Адрес отправителя (поле From) |
-| `EMAIL_PASSWORD`     | Пароль от SMTP-аккаунта       |
-| `RABBIT_MQ_HOST`     | Хост брокера RabbitMQ         |
-| `RABBIT_MQ_USERNAME` | Логин RabbitMQ                |
-| `RABBIT_MQ_PASSWORD` | Пароль RabbitMQ               |
-| `RABBIT_MQ_VHOST`    | Виртуальный хост RabbitMQ     |
+| Переменная           | Описание                                            |
+|----------------------|-----------------------------------------------------|
+| `SUPPORT_EMAIL`      | Адрес отправителя (поле From)                       |
+| `EMAIL_PASSWORD`     | Пароль от SMTP-аккаунта                             |
+| `EMAIL_HOST`         | SMTP-сервер для отправки писем                      |
+| `EMAIL_PORT`         | Порт SMTP-сервера                                   |
+| `EMAIL_TLS`          | Включение TLS-шифрования для писем (true или false) |
+| `RABBIT_MQ_HOST`     | Хост брокера RabbitMQ                               |
+| `RABBIT_MQ_USERNAME` | Логин RabbitMQ                                      |
+| `RABBIT_MQ_PASSWORD` | Пароль RabbitMQ                                     |
+| `RABBIT_MQ_VHOST`    | Виртуальный хост RabbitMQ                           |
 
 ```bash
 ./gradlew bootRun
@@ -63,6 +66,9 @@ cp .env.example .env
 **Тестирование**
 - [JUnit 5](https://junit.org/junit5/) — модульные и интеграционные тесты
 
+**Шаблонизатор и генерация HTML-писем**
+- [Thymeleaf](https://www.thymeleaf.org/) — шаблонизатор для HTML-писем
+
 ---
 
 ## Архитектура
@@ -77,10 +83,12 @@ cp .env.example .env
 
 ### Топология RabbitMQ:
 
-| Очередь                      | Routing key                 | Поля сообщения              |
-|------------------------------|-----------------------------|-----------------------------|
-| `queueVerificationCodeEmail` | `emailVerificationCode.key` | `email`, `verificationCode` |
-| `queuePasswordEmail`         | `emailPassword.key`         | `email`, `password`         |
+| Очередь                               | Routing key                          | Поля сообщения                          |
+|---------------------------------------|--------------------------------------|-----------------------------------------|
+| `queueVerificationCodeRegister`       | `RegisterVerificationCode.key`       | `email`, `verificationCode`, `language` |
+| `queueVerificationCodeChangeEmail`    | `ChangeEmailVerificationCode.key`    | `email`, `verificationCode`, `language` |
+| `queueVerificationCodeChangePassword` | `ChangePasswordVerificationCode.key` | `email`, `verificationCode`, `language` |
+| `queuePasswordEmail`                  | `emailPassword.key`                  | `email`, `password`                     |
 
 ---
 
