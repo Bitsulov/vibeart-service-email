@@ -11,8 +11,8 @@ spring:
 
   mail:
     # Данные почтового клиента
-    host: smtp.mail.ru
-    port: 587
+    host: ${EMAIL_HOST}
+    port: ${EMAIL_PORT}
     username: ${SUPPORT_EMAIL}
     password: ${EMAIL_PASSWORD}
     properties:
@@ -21,11 +21,11 @@ spring:
           auth: true
           # Шифрование TLS
           starttls:
-            enable: true
-            required: true
+            enable: ${EMAIL_TLS}
+            required: ${EMAIL_TLS}
           # Доверять сертификату почтового клиента
           ssl:
-            trust: smtp.mail.ru
+            trust: ${EMAIL_HOST}
 
 server:
   port: 8081

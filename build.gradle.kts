@@ -24,6 +24,9 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-amqp")
 
+    // Шаблонизатор для HTML писем
+    implementation("org.springframework.boot:spring-boot-starter-thymeleaf")
+
     // Сериализация JSON
     implementation("com.fasterxml.jackson.core:jackson-databind")
 
